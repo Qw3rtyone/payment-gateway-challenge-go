@@ -28,10 +28,7 @@ func New(validation services.ValidationService, paymentSvc services.PaymentServi
 	return a
 }
 
-func (a *Api) Run(parent context.Context, addr string) error {
-	ctx, cancel := context.WithCancel(parent)
-	defer cancel()
-
+func (a *Api) Run(ctx context.Context, addr string) error {
 	httpServer := &http.Server{
 		Addr:        addr,
 		Handler:     a.router,
@@ -50,7 +47,6 @@ func (a *Api) Run(parent context.Context, addr string) error {
 		fmt.Printf("starting HTTP server on %s\n", addr)
 		err := httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			cancel()
 			return err
 		}
 
