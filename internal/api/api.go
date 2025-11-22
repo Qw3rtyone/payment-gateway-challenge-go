@@ -5,27 +5,33 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
-	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/repository"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/handlers"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/sync/errgroup"
 )
 
 type Api struct {
-	router       *chi.Mux
-	paymentsRepo *repository.PaymentsRepository
+	router           *chi.Mux
+	paymentsHandlers *handlers.PaymentsHandler
 }
 
-func New() *Api {
+func New(validation services.ValidationService, paymentSvc services.PaymentService) *Api {
 	a := &Api{}
-	a.paymentsRepo = repository.NewPaymentsRepository()
+	a.paymentsHandlers = handlers.NewPaymentsHandler(validation, paymentSvc)
+
 	a.setupRouter()
 
 	return a
 }
 
-func (a *Api) Run(ctx context.Context, addr string) error {
+func (a *Api) Run(parent context.Context, addr string) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
 	httpServer := &http.Server{
 		Addr:        addr,
 		Handler:     a.router,
@@ -44,6 +50,7 @@ func (a *Api) Run(ctx context.Context, addr string) error {
 		fmt.Printf("starting HTTP server on %s\n", addr)
 		err := httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
+			cancel()
 			return err
 		}
 
@@ -56,9 +63,12 @@ func (a *Api) Run(ctx context.Context, addr string) error {
 func (a *Api) setupRouter() {
 	a.router = chi.NewRouter()
 	a.router.Use(middleware.Logger)
+	a.router.Use(middleware.Recoverer)
+	a.router.Use(middleware.Timeout(10 * time.Second))
 
 	a.router.Get("/ping", a.PingHandler())
 	a.router.Get("/swagger/*", a.SwaggerHandler())
 
+	a.router.Post("/api/payments", a.PostPaymentHandler())
 	a.router.Get("/api/payments/{id}", a.GetPaymentHandler())
 }

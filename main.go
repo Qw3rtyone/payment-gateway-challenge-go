@@ -6,15 +6,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/cko-recruitment/payment-gateway-challenge-go/docs"
 	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/api"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/bank"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/repository"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/services"
 )
 
 var (
 	version = "dev"
 	commit  = "none"
-	date    = "unknown"
+	date    = time.Now().Format(time.RubyDate)
 )
 
 //	@title			Payment Gateway Challenge Go
@@ -54,7 +58,13 @@ func run() error {
 		}
 	}()
 
-	api := api.New()
+	storage := repository.NewPaymentsRepository()
+	bankService := bank.NewClient(nil)
+
+	validationService := services.NewValidationService()
+	paymentService := services.NewPaymentService(storage, bankService)
+
+	api := api.New(validationService, paymentService)
 	if err := api.Run(ctx, ":8090"); err != nil {
 		return err
 	}

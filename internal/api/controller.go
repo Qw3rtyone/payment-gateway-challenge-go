@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/cko-recruitment/payment-gateway-challenge-go/docs"
-	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/handlers"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -32,9 +31,32 @@ func (a *Api) SwaggerHandler() http.HandlerFunc {
 	)
 }
 
-// GetPaymentHandler returns an http.HandlerFunc that handles Payments GET requests.
-func (a *Api) GetPaymentHandler() http.HandlerFunc {
-	h := handlers.NewPaymentsHandler(a.paymentsRepo)
+// PostPaymentHandler returns an http.HandlerFunc that handles Payments POST requests.
+//
+//	@Summary		Process a payment
+//	@Description	Processes a card payment through the payment gateway
+//	@Tags			payments
+//	@Accept			json
+//	@Produce		json
+//	@Param			payment	body		models.PaymentRequest	true	"Payment Request"
+//	@Success		200		{object}	models.PaymentResponse
+//	@Failure		400		{object}	models.ErrorResponse
+//	@Failure		502		{object}	models.ErrorResponse
+//	@Router			/api/payments [post]
+func (a *Api) PostPaymentHandler() http.HandlerFunc {
+	return a.paymentsHandlers.PostHandler()
+}
 
-	return h.GetHandler()
+// GetPaymentHandler returns an http.HandlerFunc that handles Payments GET requests.
+//
+//	@Summary		Retrieve payment details
+//	@Description	Retrieves details of a previously made payment by its ID
+//	@Tags			payments
+//	@Produce		json
+//	@Param			id	path		string	true	"Payment ID"
+//	@Success		200	{object}	models.PaymentResponse
+//	@Failure		404
+//	@Router			/api/payments/{id} [get]
+func (a *Api) GetPaymentHandler() http.HandlerFunc {
+	return a.paymentsHandlers.GetHandler()
 }
