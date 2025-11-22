@@ -41,7 +41,7 @@ func (a *Api) SwaggerHandler() http.HandlerFunc {
 //	@Param			payment	body		models.PaymentRequest	true	"Payment Request"
 //	@Success		200		{object}	models.PaymentResponse
 //	@Failure		400		{object}	models.ErrorResponse
-//	@Failure		502		{object}	models.ErrorResponse
+//	@Failure		500		{object}	models.ErrorResponse
 //	@Router			/api/payments [post]
 func (a *Api) PostPaymentHandler() http.HandlerFunc {
 	return a.paymentsHandlers.PostHandler()

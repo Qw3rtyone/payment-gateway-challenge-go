@@ -2,6 +2,7 @@ package bank
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,7 +55,7 @@ func NewClient(url *string) *Client {
 }
 
 // ProcessPayment sends a payment request to the acquiring bank
-func (c *Client) ProcessPayment(req models.PaymentRequest) (*BankResponse, error) {
+func (c *Client) ProcessPayment(ctx context.Context, req models.PaymentRequest) (*BankResponse, error) {
 	// Convert payment request to bank request format
 	bankReq := BankRequest{
 		CardNumber: req.CardNumber,
@@ -76,7 +77,7 @@ func (c *Client) ProcessPayment(req models.PaymentRequest) (*BankResponse, error
 		return nil, fmt.Errorf("failed to create bank URL: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", u, bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", u, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

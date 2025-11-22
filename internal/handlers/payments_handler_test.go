@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	mock_services "github.com/cko-recruitment/payment-gateway-challenge-go/internal/services/mocks"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,11 +37,11 @@ func TestGetPaymentHandler(t *testing.T) {
 			Currency:           "GBP",
 			Amount:             100,
 		}
-
-		req := httptest.NewRequest("GET", "/api/payments/test-id", nil)
+		someUid := uuid.New().String()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/api/payments/%s", someUid), nil)
 
 		// Mock: payment service returns payment
-		mockPaymentSvc.EXPECT().GetPayment(gomock.Any(), "test-id").Return(payment, nil)
+		mockPaymentSvc.EXPECT().GetPayment(gomock.Any(), someUid).Return(payment, nil)
 
 		w := httptest.NewRecorder()
 
@@ -50,12 +52,13 @@ func TestGetPaymentHandler(t *testing.T) {
 	})
 
 	t.Run("GET PaymentNotFound", func(t *testing.T) {
+		someUid := uuid.New().String()
 
-		req := httptest.NewRequest("GET", "/api/payments/NonExistingID", nil)
+		req := httptest.NewRequest("GET", fmt.Sprintf("/api/payments/%s", someUid), nil)
 		w := httptest.NewRecorder()
 
 		// Mock: payment not found
-		mockPaymentSvc.EXPECT().GetPayment(gomock.Any(), "NonExistingID").Return(nil, models.ErrPaymentNotFound)
+		mockPaymentSvc.EXPECT().GetPayment(gomock.Any(), someUid).Return(nil, models.ErrPaymentNotFound)
 
 		r.ServeHTTP(w, req)
 

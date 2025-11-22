@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/models"
 	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/services"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type PaymentsHandler struct {
@@ -29,21 +31,26 @@ func (h *PaymentsHandler) GetHandler() http.HandlerFunc {
 		ctx := r.Context()
 		id := chi.URLParam(r, "id")
 
+		if err := uuid.Validate(id); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		response, err := h.paymentProcessor.GetPayment(ctx, id)
 		if err != nil {
-			if err.Error() != models.ErrPaymentNotFound.Error() {
-				w.WriteHeader(http.StatusInternalServerError)
+			if errors.Is(err, models.ErrPaymentNotFound) {
+				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -68,7 +75,7 @@ func (h *PaymentsHandler) PostHandler() http.HandlerFunc {
 		if len(validationErrors) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(models.ErrorResponse{
-				Error:  "Rejected",
+				Error:  string(services.StatusRejected),
 				Errors: validationErrors,
 			})
 			return
@@ -83,9 +90,10 @@ func (h *PaymentsHandler) PostHandler() http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+		w.WriteHeader(http.StatusOK)
 	}
 }

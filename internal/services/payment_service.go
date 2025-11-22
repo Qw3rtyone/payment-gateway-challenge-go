@@ -39,7 +39,7 @@ func NewPaymentService(repo repository.PaymentsRepository, bankClient bank.Bank)
 func (p *paymentService) CreatePayment(ctx context.Context, req models.PaymentRequest) (*models.PaymentResponse, error) {
 
 	// Process payment with bank
-	bankResp, err := p.bankClient.ProcessPayment(req)
+	bankResp, err := p.bankClient.ProcessPayment(ctx, req)
 	if err != nil {
 		// If bank returns an error, treat as declined
 		return nil, fmt.Errorf("bank processing error: %v", err)
